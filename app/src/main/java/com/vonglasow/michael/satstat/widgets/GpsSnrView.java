@@ -424,13 +424,18 @@ public class GpsSnrView extends View {
 												// 400 < nmeaID <= 414: IRNSS / NavIC
 												if (!draw_401_414) return -1;
 												if (!draw_301_336) skip += 36;
-												skip += 37; // gap 264-300 (37 slots) + gap 337-400 (64 slots) = 101, but we skip 264-300 first
+												skip += 37; // gap 264–300 is never drawn
+												skip += 64; // gap 337–400 is never drawn
 											}
 											else if (nmeaID > 336) {
 												// 336 < nmeaID <= 400: gap, nothing maps here
 												return -1;
 											}
-											else if (!draw_301_336) return -1;
+											else {
+												// 300 < nmeaID <= 336: Galileo
+												if (!draw_301_336) return -1;
+												skip += 37; // gap 264–300 is never drawn
+											}
 										} else if (nmeaID > 263) {
 											// 263 < nmeaID <= 300: gap between BeiDou and Galileo
 											return -1;
