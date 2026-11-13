@@ -221,18 +221,60 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 			mDemoHandler.postDelayed(this::feedDemoSats, 500);
 			return;
 		}
-		// Build a synthetic list of SatInfo covering GPS, GLONASS, Galileo, BeiDou
+		// Build a synthetic list of SatInfo covering GPS, SBAS, GLONASS, QZSS,
+		// BeiDou (incl. BeiDou-3 extended), Galileo, and IRNSS/NavIC.
+		// PRN values are the legacy NMEA-mapped PRNs, not raw SVIDs.
 		List<SatInfo> demo = new ArrayList<>();
 		int[][] spec = {
 				// {constellationType, prn, snr, elevation, azimuth, usedInFix}
-				{GnssStatus.CONSTELLATION_GPS,      1, 45, 60, 120, 1},
-				{GnssStatus.CONSTELLATION_GPS,      2, 40, 50, 150, 1},
-				{GnssStatus.CONSTELLATION_GPS,      3, 35, 40, 180, 0},
-				{GnssStatus.CONSTELLATION_GLONASS, 65, 42, 55, 100, 1},
-				{GnssStatus.CONSTELLATION_GLONASS, 66, 38, 45, 130, 0},
-				{GnssStatus.CONSTELLATION_GALILEO,301, 44, 65,  90, 1},
-				{GnssStatus.CONSTELLATION_GALILEO,302, 39, 52, 140, 1},
-				{GnssStatus.CONSTELLATION_BEIDOU, 201, 41, 48, 110, 1},
+				// --- GPS (PRN 1-32): 10 sats, strong mix ---
+				{GnssStatus.CONSTELLATION_GPS,   1, 48, 72,  30, 1},
+				{GnssStatus.CONSTELLATION_GPS,   5, 45, 65, 120, 1},
+				{GnssStatus.CONSTELLATION_GPS,   8, 43, 58, 210, 1},
+				{GnssStatus.CONSTELLATION_GPS,  12, 41, 52, 300, 1},
+				{GnssStatus.CONSTELLATION_GPS,  15, 39, 45,  45, 1},
+				{GnssStatus.CONSTELLATION_GPS,  18, 37, 38, 135, 1},
+				{GnssStatus.CONSTELLATION_GPS,  21, 35, 32, 225, 1},
+				{GnssStatus.CONSTELLATION_GPS,  24, 33, 28, 315, 1},
+				{GnssStatus.CONSTELLATION_GPS,  28, 28, 20,  90, 0},
+				{GnssStatus.CONSTELLATION_GPS,  31, 25, 15, 180, 0},
+				// --- SBAS (PRN 33-64): EGNOS + WAAS ---
+				{GnssStatus.CONSTELLATION_SBAS, 35, 42, 50, 200, 1},
+				{GnssStatus.CONSTELLATION_SBAS, 48, 40, 45, 300, 0},
+				// --- GLONASS (PRN 65-96): 7 sats ---
+				{GnssStatus.CONSTELLATION_GLONASS, 65, 46, 70,  60, 1},
+				{GnssStatus.CONSTELLATION_GLONASS, 68, 44, 62, 150, 1},
+				{GnssStatus.CONSTELLATION_GLONASS, 71, 42, 55, 240, 1},
+				{GnssStatus.CONSTELLATION_GLONASS, 74, 40, 48, 330, 1},
+				{GnssStatus.CONSTELLATION_GLONASS, 77, 38, 40,  60, 1},
+				{GnssStatus.CONSTELLATION_GLONASS, 80, 35, 30, 150, 0},
+				{GnssStatus.CONSTELLATION_GLONASS, 83, 30, 22, 240, 0},
+				// --- QZSS (PRN 193-200): 2 sats ---
+				{GnssStatus.CONSTELLATION_QZSS, 193, 44, 60, 120, 1},
+				{GnssStatus.CONSTELLATION_QZSS, 194, 38, 35, 240, 0},
+				// --- BeiDou (PRN 201-263): 10 sats, includes BeiDou-3 extended ---
+				{GnssStatus.CONSTELLATION_BEIDOU, 201, 46, 72,  45, 1},
+				{GnssStatus.CONSTELLATION_BEIDOU, 203, 44, 64, 135, 1},
+				{GnssStatus.CONSTELLATION_BEIDOU, 205, 42, 56, 225, 1},
+				{GnssStatus.CONSTELLATION_BEIDOU, 207, 40, 48, 315, 1},
+				{GnssStatus.CONSTELLATION_BEIDOU, 209, 38, 40,  45, 1},
+				{GnssStatus.CONSTELLATION_BEIDOU, 211, 36, 33, 135, 1},
+				{GnssStatus.CONSTELLATION_BEIDOU, 213, 34, 26, 225, 1},
+				{GnssStatus.CONSTELLATION_BEIDOU, 215, 32, 20, 315, 0},
+				{GnssStatus.CONSTELLATION_BEIDOU, 230, 30, 18,  90, 0},  // BeiDou-3 extended
+				{GnssStatus.CONSTELLATION_BEIDOU, 245, 28, 15, 180, 0},  // BeiDou-3 extended
+				// --- Galileo (PRN 301-336): 7 sats ---
+				{GnssStatus.CONSTELLATION_GALILEO, 301, 47, 68,  90, 1},
+				{GnssStatus.CONSTELLATION_GALILEO, 304, 45, 60, 180, 1},
+				{GnssStatus.CONSTELLATION_GALILEO, 307, 43, 53, 270, 1},
+				{GnssStatus.CONSTELLATION_GALILEO, 310, 41, 46,   0, 1},
+				{GnssStatus.CONSTELLATION_GALILEO, 313, 39, 38,  90, 1},
+				{GnssStatus.CONSTELLATION_GALILEO, 316, 36, 30, 180, 0},
+				{GnssStatus.CONSTELLATION_GALILEO, 319, 28, 18, 270, 0},
+				// --- IRNSS / NavIC (PRN 401-414): 3 sats ---
+				{GnssStatus.CONSTELLATION_IRNSS, 401, 45, 65,  90, 1},
+				{GnssStatus.CONSTELLATION_IRNSS, 404, 42, 55, 180, 1},
+				{GnssStatus.CONSTELLATION_IRNSS, 407, 38, 30, 270, 0},
 		};
 		for (int[] s : spec) {
 			demo.add(new SatInfo(s[0], s[1], s[2], s[3], s[4], s[5] == 1));
