@@ -40,6 +40,8 @@ public class SatInfo {
                 return svid + 200; // NMEA 201-235
             case GnssStatus.CONSTELLATION_GALILEO:
                 return svid + 300; // 301-336
+            case GnssStatus.CONSTELLATION_IRNSS:
+                return svid + 400; // 401-414 (IRNSS/NavIC, 14 satellites)
             default:
                 return svid;
         }

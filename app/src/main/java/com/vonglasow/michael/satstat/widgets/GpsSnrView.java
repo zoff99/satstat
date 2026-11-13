@@ -41,7 +41,7 @@ public class GpsSnrView extends View {
 	/**
 	 * The highest currently supported NMEA ID.
 	 */
-	private final int MAX_NMEA_ID = 336;
+	private final int MAX_NMEA_ID = 414;
 
 	private Iterable<SatInfo> mSats;
 
@@ -80,6 +80,8 @@ public class GpsSnrView extends View {
 	 * 201–235: Beidou
 	 * 236–300: not used
 	 * 301–336: Galileo
+	 * 337–400: not used (gap between Galileo and IRNSS)
+	 * 401–414: IRNSS / NavIC
 	 */
 	private boolean draw_1_32 = false;
 	private boolean draw_33_54 = false;
@@ -92,6 +94,7 @@ public class GpsSnrView extends View {
 	private boolean draw_201_235 = false;
 	private boolean draw_236_300 = false;
 	private boolean draw_301_336 = false;
+	private boolean draw_401_414 = false;
 
 	// Counter used by drawLabel to stagger labels across two rows; reset each drawGrid call
 	private int mLabelIndex = 0;
@@ -264,6 +267,10 @@ public class GpsSnrView extends View {
 		if (draw_301_336)
 			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_301_336), 301, 36, numBars, chartBottom);
 
+		// 401–414 is IRNSS / NavIC
+		if (draw_401_414)
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_401_414), 401, 14, numBars, chartBottom);
+
 		// range boundaries and auxiliary lines (after every 4th satellite)
 		for (int nmeaID = 1; nmeaID < MAX_NMEA_ID; nmeaID++) {
 			int pos = getGridPos(nmeaID);
@@ -280,6 +287,8 @@ public class GpsSnrView extends View {
 					case 235:
 					case 300:
 					case 336:
+					case 400:
+					case 414:
 						paint = gridPaintStrong;
 						break;
 					case 54:
@@ -415,6 +424,17 @@ public class GpsSnrView extends View {
 										if (!draw_196_200) skip+=5;
 										if (nmeaID > 235) {
 											if (nmeaID > MAX_NMEA_ID) return -1;
+											else if (nmeaID > 400) {
+												// 400 < nmeaID <= 414: IRNSS / NavIC
+												if (!draw_401_414) return -1;
+												if (!draw_301_336) skip += 36;
+												if (!draw_236_300) skip += 65;
+												skip += 64; // gap 337–400 is never drawn
+											}
+											else if (nmeaID > 336) {
+												// 336 < nmeaID <= 400: gap, nothing maps here
+												return -1;
+											}
 											else if (!draw_301_336) return -1;
 											else if (!draw_236_300) skip+=65;
 										} else {
@@ -463,7 +483,7 @@ public class GpsSnrView extends View {
 	 * The number of bars to draw varies depending on the systems supported by the device. Common
 	 * numbers are 32 for a GPS-only receiver, 56 for a combined GPS/GLONASS receiver or 91 for a
 	 * combined GPS/GLONASS/Beidou receiver. Another 36 bars are needed for Galileo; some receivers
-	 * require additional bars for regional GNSS or assistance systems.
+	 * require additional bars for regional GNSS or assistance systems. IRNSS/NavIC adds 14 more.
 	 *
 	 * @return The number of bars to draw
 	 */
@@ -478,7 +498,8 @@ public class GpsSnrView extends View {
 			   + (draw_196_200 ? 5 : 0)
 			   + (draw_201_235 ? 35 : 0)
 			   + (draw_236_300 ? 65 : 0)
-			   + (draw_301_336 ? 36 : 0);
+			   + (draw_301_336 ? 36 : 0)
+			   + (draw_401_414 ? 14 : 0);
 	}
 
 	/**
@@ -523,6 +544,11 @@ public class GpsSnrView extends View {
 					draw_236_300 = true; // TODO: same as above, do we really want to enable this?
 				} else if (prn <= 336) {
 					draw_301_336 = true;
+				} else if (prn <= 400) {
+					// 337–400 is a gap; nothing meaningful maps here
+					Log.w(TAG, String.format("Got satellite with NMEA ID %d (from the 337-400 gap)", prn));
+				} else if (prn <= 414) {
+					draw_401_414 = true;
 				} else {
 					Log.w(TAG, String.format("Got satellite with NMEA ID %d, possibly unsupported system", prn));
 				}
@@ -533,7 +559,7 @@ public class GpsSnrView extends View {
 		 * will their corresponding base range.
 		 */
 		if (!(draw_1_32 || draw_33_54 || draw_65_88 || draw_97_192 || draw_193_195 || draw_201_235
-			  || draw_236_300 || draw_301_336))
+			  || draw_236_300 || draw_301_336 || draw_401_414))
 			draw_1_32 = true;
 	}
 
