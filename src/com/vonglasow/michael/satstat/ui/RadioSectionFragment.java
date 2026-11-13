@@ -1,6 +1,6 @@
 /*
  * Copyright © 2013–2023 Michael von Glasow.
- * 
+ *
  * This file is part of LSRN Tools.
  *
  * LSRN Tools is free software: you can redistribute it and/or modify
@@ -334,58 +334,58 @@ public class RadioSectionFragment extends Fragment {
 	 */
 	public static int getCellIcon(int generation, int source) {
 		switch (source) {
-		case CellTower.SOURCE_CELL_LOCATION:
-			switch (generation) {
-			case 2:
-				return(R.drawable.ic_content_cell_2g_serving);
-			case 3:
-				return(R.drawable.ic_content_cell_3g_serving);
-			case 4:
-				return(R.drawable.ic_content_cell_4g_serving);
+			case CellTower.SOURCE_CELL_LOCATION:
+				switch (generation) {
+					case 2:
+						return(R.drawable.ic_content_cell_2g_serving);
+					case 3:
+						return(R.drawable.ic_content_cell_3g_serving);
+					case 4:
+						return(R.drawable.ic_content_cell_4g_serving);
+					default:
+						return(R.drawable.ic_content_cell_serving);
+				}
+			case CellTower.SOURCE_NEIGHBORING_CELL_INFO:
+				switch (generation) {
+					case 2:
+						return(R.drawable.ic_content_cell_2g_neighbor);
+					case 3:
+						return(R.drawable.ic_content_cell_3g_neighbor);
+					case 4:
+						return(R.drawable.ic_content_cell_4g_neighbor);
+					default:
+						return(R.drawable.ic_content_cell_neighbor);
+				}
+			case CellTower.SOURCE_CELL_INFO:
+				switch (generation) {
+					case 2:
+						return(R.drawable.ic_content_cell_2g_all);
+					case 3:
+						return(R.drawable.ic_content_cell_3g_all);
+					case 4:
+						return(R.drawable.ic_content_cell_4g_all);
+					default:
+						return(R.drawable.ic_content_cell_all);
+				}
 			default:
-				return(R.drawable.ic_content_cell_serving);
-			}
-		case CellTower.SOURCE_NEIGHBORING_CELL_INFO:
-			switch (generation) {
-			case 2:
-				return(R.drawable.ic_content_cell_2g_neighbor);
-			case 3:
-				return(R.drawable.ic_content_cell_3g_neighbor);
-			case 4:
-				return(R.drawable.ic_content_cell_4g_neighbor);
-			default:
-				return(R.drawable.ic_content_cell_neighbor);
-			}
-		case CellTower.SOURCE_CELL_INFO:
-			switch (generation) {
-			case 2:
-				return(R.drawable.ic_content_cell_2g_all);
-			case 3:
-				return(R.drawable.ic_content_cell_3g_all);
-			case 4:
-				return(R.drawable.ic_content_cell_4g_all);
-			default:
-				return(R.drawable.ic_content_cell_all);
-			}
-		default:
-			switch (generation) {
-			case 2:
-				return(R.drawable.ic_content_cell_2g_none);
-			case 3:
-				return(R.drawable.ic_content_cell_3g_none);
-			case 4:
-				return(R.drawable.ic_content_cell_4g_none);
-			default:
-				return(R.drawable.ic_content_cell_none);
-			}
+				switch (generation) {
+					case 2:
+						return(R.drawable.ic_content_cell_2g_none);
+					case 3:
+						return(R.drawable.ic_content_cell_3g_none);
+					case 4:
+						return(R.drawable.ic_content_cell_4g_none);
+					default:
+						return(R.drawable.ic_content_cell_none);
+				}
 		}
-}
+	}
 
 
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
+							 Bundle savedInstanceState) {
 		mainActivity = (MainActivity) this.getContext();
 		View rootView = inflater.inflate(R.layout.fragment_main_radio, container, false);
 
@@ -409,14 +409,21 @@ public class RadioSectionFragment extends Fragment {
 		networkTimeRunnable = new Runnable() {
 			@Override
 			public void run() {
-				int newNetworkType = mainActivity.telephonyManager.getNetworkType();
+				int newNetworkType;
+				try {
+					newNetworkType = mainActivity.telephonyManager.getNetworkType();
+				} catch (SecurityException e) {
+					// Permission not granted, stop polling for network type
+					Log.w(TAG, "Permission not granted, TelephonyManager#getNetworkType() failed");
+					return;
+				}
 				if (CellTower.getGenerationFromNetworkType(newNetworkType) != mLastNetworkGen)
 					onNetworkTypeChanged(newNetworkType);
 				else
 					networkTimehandler.postDelayed(this, NETWORK_REFRESH_DELAY);
 			}
 		};
-		
+
 		wifiComparator = new WifiScanResultComparator();
 		wifiComparator.setCriterion(mainActivity.prefWifiSort);
 
@@ -436,7 +443,12 @@ public class RadioSectionFragment extends Fragment {
 		else
 			mainActivity.permsRequested[Const.PERM_REQUEST_CELL_INFO] = true;
 		//and make sure we have the correct network type
-		onNetworkTypeChanged(mainActivity.telephonyManager.getNetworkType());
+		try {
+			onNetworkTypeChanged(mainActivity.telephonyManager.getNetworkType());
+		} catch (SecurityException e) {
+			// Permission not granted, can't retrieve network type
+			Log.w(TAG, "Permission not granted, TelephonyManager#getNetworkType() failed");
+		}
 
 		mainActivity.wifiManager.startScan();
 
@@ -458,7 +470,7 @@ public class RadioSectionFragment extends Fragment {
 	 * Updates the network type indicator for the current cell. Called by
 	 * {@link networkTimeRunnable.run()} or
 	 * {@link android.telephony.PhoneStateListener#onDataConnectionStateChanged(int, int)}.
-	 * 
+	 *
 	 * @param networkType One of the NETWORK_TYPE_xxxx constants defined in {@link android.telephony.TelephonyManager}
 	 */
 	protected void onNetworkTypeChanged(int networkType) {
@@ -519,7 +531,7 @@ public class RadioSectionFragment extends Fragment {
 			}
 			for (ScanResult result : scanResults) {
 				if (!result.BSSID.equals(selectedBSSID)) {
-					addWifiResult(result);	
+					addWifiResult(result);
 				}
 			}
 		}
@@ -532,11 +544,11 @@ public class RadioSectionFragment extends Fragment {
 	 * This method is automatically called by
 	 * {@link PhoneStateListener#onCellInfoChanged(List)}
 	 * and {@link PhoneStateListener.onCellLocationChanged}. It must be called
-	 * manually whenever {@link #mCellsCdma}, {@link #mCellsGsm}, 
+	 * manually whenever {@link #mCellsCdma}, {@link #mCellsGsm},
 	 * {@link #mCellsLte} or one of their values are modified, typically after
 	 * calling {@link android.telephony.TelephonyManager#getAllCellInfo()},
 	 * {@link android.telephony.TelephonyManager#getCellLocation()} or
-	 * {@link android.telephony.TelephonyManager#getNeighboringCellInfo()}. 
+	 * {@link android.telephony.TelephonyManager#getNeighboringCellInfo()}.
 	 */
 	protected void showCells() {
 		int cdmaVisibility = View.GONE;
@@ -666,24 +678,24 @@ public class RadioSectionFragment extends Fragment {
 
 	/**
 	 * Updates all cell data.
-	 * 
+	 *
 	 * This method is called whenever any change in the cell environment (cells in view or signal
 	 * strengths) is signaled, e.g. by a call to a {@link android.telephony.PhoneStateListener}. The
 	 * arguments of this method should be filled with the data passed to the
 	 * {@link android.telephony.PhoneStateListener} where possible, and null passed for all others.
-	 * 
+	 *
 	 * To force an update of all cell data, simply call this method with each argument set to null.
-	 * 
+	 *
 	 * If any of the arguments is null, this method will try to obtain that data by querying
 	 * {@link android.telephony.TelephonyManager}. The only exception is {@code signalStrength}, which
 	 * will not be explicitly queried if missing.
-	 * 
+	 *
 	 * It will first process {@code aCellInfo}, then {@code aLocation}, querying current values from
 	 * {@link android.telephony.TelephonyManager} if one of these arguments is null. Next it will process
 	 * {@code signalStrength}, if supplied, and eventually obtain neighboring cells by calling
 	 * {@link android.telephony.TelephonyManager#getNeighboringCellInfo()} and process these. Eventually
 	 * it will refresh the list of cells.
-	 * 
+	 *
 	 * @param aLocation The {@link android.telephony.CellLocation} reported by a
 	 * {@link android.telephony.PhoneStateListener}. If null, the current value will be queried.
 	 * @param aSignalStrength The {@link android.telephony.SignalStrength} reported by a
@@ -748,8 +760,8 @@ public class RadioSectionFragment extends Fragment {
 				mServingCell.setGeneration(mLastNetworkGen);
 			NetworkInfo netinfo = mainActivity.connectivityManager.getActiveNetworkInfo();
 			if ((netinfo == null)
-					|| (netinfo.getType() < ConnectivityManager.TYPE_MOBILE_MMS)
-					|| (netinfo.getType() > ConnectivityManager.TYPE_MOBILE_HIPRI)) {
+				|| (netinfo.getType() < ConnectivityManager.TYPE_MOBILE_MMS)
+				|| (netinfo.getType() > ConnectivityManager.TYPE_MOBILE_HIPRI)) {
 				networkTimehandler.postDelayed(networkTimeRunnable, NETWORK_REFRESH_DELAY);
 			}
 		} else if (mServingCell != null) {
@@ -765,20 +777,20 @@ public class RadioSectionFragment extends Fragment {
 					((CellTowerGsm) mServingCell).setAsu(mLastCellAsu);
 				else
 					Log.w(MainActivity.class.getSimpleName(),
-							"Got SignalStrength for PHONE_TYPE_GSM but serving cell is not GSM");
+						  "Got SignalStrength for PHONE_TYPE_GSM but serving cell is not GSM");
 			} else if (pt == PHONE_TYPE_CDMA) {
 				mLastCellDbm = signalStrength.getCdmaDbm();
 				if ((mServingCell != null) && (mServingCell instanceof CellTowerCdma))
-					mServingCell.setDbm(mLastCellDbm);
+					((CellTowerCdma) mServingCell).setDbm(mLastCellDbm);
 				else
 					Log.w(MainActivity.class.getSimpleName(),
-							"Got SignalStrength for PHONE_TYPE_CDMA but serving cell is not CDMA");
+						  "Got SignalStrength for PHONE_TYPE_CDMA but serving cell is not CDMA");
 			} else
 				Log.w(MainActivity.class.getSimpleName(),
-						String.format("Got SignalStrength for unknown phone type (%d)", pt));
+					  String.format("Got SignalStrength for unknown phone type (%d)", pt));
 		} else if (mServingCell == null) {
 			Log.w(MainActivity.class.getSimpleName(),
-					"Got SignalStrength but serving cell is null");
+				  "Got SignalStrength but serving cell is null");
 		}
 
 		updateNeighboringCellInfo();
@@ -796,7 +808,7 @@ public class RadioSectionFragment extends Fragment {
 			 * NeighboringCellInfo is not supported on some devices and will return no data. It lists
 			 * only GSM and successors' cells, but not CDMA cells.
 			 */
-            List<NeighboringCellInfo> neighboringCells = java.util.Collections.emptyList();
+			List<NeighboringCellInfo> neighboringCells = java.util.Collections.emptyList();
 			String networkOperator = mainActivity.telephonyManager.getNetworkOperator();
 			mCellsGsm.updateAll(networkOperator, neighboringCells);
 			mCellsLte.updateAll(networkOperator, neighboringCells);
