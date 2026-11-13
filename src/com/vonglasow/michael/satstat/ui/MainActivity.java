@@ -527,7 +527,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
 	@Override
 	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-		StringBuilder messageBuilder = new StringBuilder();
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        StringBuilder messageBuilder = new StringBuilder();
 		for (int i = 0; i < grantResults.length; i++)
 			if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION)) {
 				if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
