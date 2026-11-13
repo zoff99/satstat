@@ -69,7 +69,8 @@ public class SettingsActivity extends AppCompatActivity implements OnPreferenceC
 	@SuppressLint("NewApi")
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == REQUEST_CODE_PICK_MAP_PATH) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_PICK_MAP_PATH) {
 			if (resultCode == RESULT_OK) {
 				setMapPath(data.getStringExtra(FileBrowserActivity.returnDirectoryParameter));
 			}
@@ -179,7 +180,8 @@ public class SettingsActivity extends AppCompatActivity implements OnPreferenceC
 
 	@Override
 	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-		if ((requestCode == Const.PERM_REQUEST_MAP_DOWNLOAD) && (grantResults.length > 0)) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if ((requestCode == Const.PERM_REQUEST_MAP_DOWNLOAD) && (grantResults.length > 0)) {
 			if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
 				startActivity(new Intent(this, MapDownloadActivity.class));
 			else {
