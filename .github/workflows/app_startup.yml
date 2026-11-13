@@ -61,10 +61,10 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Build and install
+      - name: Build APK
         run: |
           chmod +x ./gradlew
-          ./gradlew :app:assembleDebug :app:installDebug --stacktrace
+          ./gradlew :app:assembleDebug --stacktrace
 
       - name: Android emulator test
         timeout-minutes: 30
@@ -112,4 +112,3 @@ jobs:
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: "/home/runner/android_screen01_${{ matrix.api-level }}.png"
-
