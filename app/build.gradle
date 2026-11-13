@@ -178,5 +178,5 @@ dependencies {
     implementation 'com.caverock:androidsvg:1.2.2-beta-1'
     implementation 'net.sf.kxml:kxml2:2.3.0'
 
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
