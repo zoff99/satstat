@@ -1,3 +1,0 @@
-Update Portuguese translation
-Fix crash in CDMA cell view
-Fix nautic coordinate display
