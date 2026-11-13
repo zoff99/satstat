@@ -327,7 +327,7 @@ public class PasvLocListenerService extends Service implements LocationListener,
 				.setContentTitle(getString(R.string.value_none))
 				.setContentText(getString(R.string.value_none))
 				.setWhen(0)
-				.setVisibility(Notification.VISIBILITY_PUBLIC);
+				.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
 		Intent mainIntent = new Intent(this, MainActivity.class);
 
@@ -372,8 +372,17 @@ public class PasvLocListenerService extends Service implements LocationListener,
 	}
 
 	private void requestLocationUpdates() {
-		mLocationManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0, this);
-		mLocationManager.registerGnssStatusCallback(mGnssStatusCallback, new android.os.Handler(android.os.Looper.getMainLooper()));
+		if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+			Log.w(TAG, "ACCESS_FINE_LOCATION permission not granted. Location notifications will not be available.");
+			return;
+		}
+		try {
+			mLocationManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0, this);
+			mLocationManager.registerGnssStatusCallback(mGnssStatusCallback, new android.os.Handler(android.os.Looper.getMainLooper()));
+		} catch (SecurityException e) {
+			// permission may have been revoked between the check and the call
+			Log.w(TAG, "Permission not granted for location updates: " + e.getMessage());
+		}
 	}
 
 	private void requestPermissions() {

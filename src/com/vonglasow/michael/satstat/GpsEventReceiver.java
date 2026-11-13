@@ -183,10 +183,10 @@ public class GpsEventReceiver extends BroadcastReceiver {
 		}
 
 		/**
-		 * @param args[0] A {@link Context} for connecting to the various system services
-		 * @param args[1] The {@link Intent} to raise when the next update is due
-		 * @param args[2] A {@link SharedPreferences} instance in which the timestamp of the update will be stored
-		 * @param args[3] The update frequency, of type {@link Long}, in milliseconds
+		 * @param args 0  A {@link Context} for connecting to the various system services
+		 * @param args 1  The {@link Intent} to raise when the next update is due
+		 * @param args 2  A {@link SharedPreferences} instance in which the timestamp of the update will be stored
+		 * @param args 3  The update frequency, of type {@link Long}, in milliseconds
 		 */
 		@Override
 		protected Integer doInBackground(Object... args) {
