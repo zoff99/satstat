@@ -5,6 +5,8 @@ Android Location, Sensor and Radio Network Status
 
 <!--<a href="https://f-droid.org/packages/com.vonglasow.michael.satstat/" target="_blank"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80"/></a>-->
 
+<br>
+Thanks to Michael von Glasow (https://gitlab.com/mvglasow) for the original program. (https://gitlab.com/mvglasow/satstat)
 
 Status
 =
