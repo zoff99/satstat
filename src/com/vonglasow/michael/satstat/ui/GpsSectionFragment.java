@@ -32,8 +32,8 @@ import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
-import android.location.GpsSatellite;
-import android.location.GpsStatus;
+import com.vonglasow.michael.satstat.utils.SatInfo;
+import android.location.GnssStatus;
 import android.location.Location;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
@@ -149,13 +149,12 @@ public class GpsSectionFragment extends Fragment {
 			mainActivity.gpsSectionFragment = null;
 	}
 
-
 	/**
 	 * Called by {@link MainActivity} when the status of the GPS changes. Updates GPS display.
 	 */
-	public void onGpsStatusChanged(GpsStatus status, int satsInView, int satsUsed, Iterable<GpsSatellite> sats) {
+    public void onGpsStatusChanged(GnssStatus status, int ttff, int satsInView, int satsUsed, Iterable<SatInfo> sats) {    
 		gpsSats.setText(String.valueOf(satsUsed) + "/" + String.valueOf(satsInView));
-		gpsTtff.setText(String.valueOf(status.getTimeToFirstFix() / 1000));
+        gpsTtff.setText(String.valueOf(ttff / 1000));
 		gpsStatusView.showSats(sats);
 		gpsSnrView.showSats(sats);
 	}

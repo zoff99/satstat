@@ -26,7 +26,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.location.GpsSatellite;
+import com.vonglasow.michael.satstat.utils.SatInfo;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -43,7 +43,7 @@ public class GpsSnrView extends View {
 	 */
 	private final int MAX_NMEA_ID = 336;
 
-	private Iterable<GpsSatellite> mSats;
+	private Iterable<SatInfo> mSats;
 
 	private Paint activePaint;
 	private Paint inactivePaint;
@@ -326,7 +326,7 @@ public class GpsSnrView extends View {
 	 * Draws the SNR bar for a satellite.
 	 * 
 	 * @param canvas The {@code Canvas} on which the SNR view will appear.
-	 * @param nmeaID The NMEA ID of the satellite, as returned by {@link android.location.GpsSatellite#getPrn()}.
+	 * @param nmeaID The NMEA ID of the satellite, as returned by {@link android.location.SatInfo#getPrn()}.
 	 * @param snr The signal-to-noise ratio (SNR) for the satellite.
 	 * @param used Whether the satellite is used in the fix.
 	 */
@@ -352,7 +352,7 @@ public class GpsSnrView extends View {
 	 * satellite with the given {@code nmeaID} will appear in the grid, taking
 	 * into account the visibility of NMEA ID ranges.
 	 * 
-	 * @param nmeaID The NMEA ID of the satellite, as returned by {@link android.location.GpsSatellite#getPrn()}.
+	 * @param nmeaID The NMEA ID of the satellite, as returned by {@link android.location.SatInfo#getPrn()}.
 	 * @return The position of the SNR bar in the grid. The position of the first visible bar is 1. If {@code nmeaID} falls within a hidden range, -1 is returned. 
 	 */
 	private int getGridPos(int nmeaID) {
@@ -458,7 +458,7 @@ public class GpsSnrView extends View {
 	protected void initializeGrid() {
 		// iterate through list to find out how many bars to draw
 		if (mSats != null)
-			for (GpsSatellite sat : mSats) {
+			for (SatInfo sat : mSats) {
 				int prn = sat.getPrn();
 				if (prn < 1) {
 					Log.wtf(TAG, String.format("Got satellite with invalid NMEA ID %d", prn));
@@ -519,7 +519,7 @@ public class GpsSnrView extends View {
 		
 		// draw the SNR bars
 		if (mSats != null)
-			for (GpsSatellite sat : mSats)
+			for (SatInfo sat : mSats)
 				drawSat(canvas, sat.getPrn(), sat.getSnr(), sat.usedInFix());
 		
 		// draw the grid on top
@@ -535,11 +535,11 @@ public class GpsSnrView extends View {
 	 * Refreshes the SNR view with current data.
 	 * <p>
 	 * Call this method when new SNR data is available. It will update the SNR
-	 * view's internal list of {@code GpsSatellite}s and trigger a redraw.
+	 * view's internal list of {@code SatInfo}s and trigger a redraw.
 	 * 
 	 * @param sats A list of satellites currently in view.
 	 */
-	public void showSats(Iterable<GpsSatellite> sats) {
+	public void showSats(Iterable<SatInfo> sats) {
 		mSats = sats;
 		invalidate();
 	}

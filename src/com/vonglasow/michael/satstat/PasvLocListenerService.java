@@ -37,8 +37,8 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageManager;
-import android.location.GpsSatellite;
-import android.location.GpsStatus;
+import com.vonglasow.michael.satstat.utils.SatInfo;
+import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -50,7 +50,7 @@ import androidx.core.content.ContextCompat;
 import android.util.Log;
 import com.hzi.UTM;
 
-public class PasvLocListenerService extends Service implements GpsStatus.Listener, LocationListener, OnSharedPreferenceChangeListener, OnRequestPermissionsResultCallback {
+public class PasvLocListenerService extends Service implements LocationListener, OnSharedPreferenceChangeListener, OnRequestPermissionsResultCallback {
 
 	// The unique ID for the notification
 	private static final int ONGOING_NOTIFICATION = 1;
@@ -117,37 +117,37 @@ public class PasvLocListenerService extends Service implements GpsStatus.Listene
 		stopForeground(true);
 		unregisterReceiver(mGpsStatusReceiver);
 		mLocationManager.removeUpdates(this);
-    	mLocationManager.removeGpsStatusListener(this);
+    	mLocationManager.unregisterGnssStatusCallback(mGnssStatusCallback);
 		mSharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
 	}
 
-	@Override
-	public void onGpsStatusChanged(int event) {
-		GpsStatus status = mLocationManager.getGpsStatus(null);
-		int satsUsed = 0;
-		Iterable<GpsSatellite> sats = status.getSatellites();
-		for (GpsSatellite sat : sats) {
-			if (sat.usedInFix()) {
-				satsUsed++;
-			}
-		}
-		if (satsUsed == 0) {
-			if (mStatus != GPS_INACTIVE)
-				mStatus = GPS_SEARCH;
-			showStatusNoLocation();
-		}
-	}
+    private GnssStatus mLastGnssStatus = null;
+    private int mTtff = 0;
+
+    private final GnssStatus.Callback mGnssStatusCallback = new GnssStatus.Callback() {
+        @Override
+        public void onFirstFix(int ttffMillis) {
+            mTtff = ttffMillis;
+        }
+
+        @Override
+        public void onSatelliteStatusChanged(GnssStatus status) {
+            mLastGnssStatus = status;
+            if (mNotifySearch && (mStatus != GPS_INACTIVE) && (mStatus != GPS_FIX)) {
+                showStatusNoLocation();
+            }
+        }
+    };
 
 	@Override
 	public void onLocationChanged(Location location) {
 		if (!location.getProvider().equals(LocationManager.GPS_PROVIDER)) return;
 		if (mNotifyFix && (mStatus != GPS_INACTIVE)) {
 			mStatus = GPS_FIX;
-			GpsStatus status = mLocationManager.getGpsStatus(null);
 			int satsInView = 0;
 			int satsUsed = 0;
-			Iterable<GpsSatellite> sats = status.getSatellites();
-			for (GpsSatellite sat : sats) {
+			Iterable<SatInfo> sats = SatInfo.fromGnssStatus(mLastGnssStatus);
+			for (SatInfo sat : sats) {
 				satsInView++;
 				if (sat.usedInFix()) {
 					satsUsed++;
@@ -218,7 +218,7 @@ public class PasvLocListenerService extends Service implements GpsStatus.Listene
 					satsUsed,
 					satsInView);
 			text = text + (text.equals("")?"":",\n") + String.format("TTFF %d s",
-					status.getTimeToFirstFix() / 1000);
+					mTtff / 1000);
 			mBuilder.setSmallIcon(R.drawable.ic_stat_notify_location);
 			mBuilder.setContentTitle(title);
 			mBuilder.setContentText(text);
@@ -229,6 +229,7 @@ public class PasvLocListenerService extends Service implements GpsStatus.Listene
 			stopForeground(true);
 		}
 	}
+
 
 	@Override
 	public void onProviderDisabled(String provider) {
@@ -343,7 +344,7 @@ public class PasvLocListenerService extends Service implements GpsStatus.Listene
 	
 	private void requestLocationUpdates() {
 		mLocationManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0, this);
-		mLocationManager.addGpsStatusListener(this);
+		mLocationManager.registerGnssStatusCallback(mGnssStatusCallback, new android.os.Handler(android.os.Looper.getMainLooper()));
 	}
 	
 	private void requestPermissions() {

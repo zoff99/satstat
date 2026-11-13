@@ -55,8 +55,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.GpsSatellite;
-import android.location.GpsStatus;
+import com.vonglasow.michael.satstat.utils.SatInfo;
+import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -101,7 +101,7 @@ import com.vonglasow.michael.satstat.R;
 import com.vonglasow.michael.satstat.data.CellTower;
 import com.vonglasow.michael.satstat.data.CellTowerList;
 
-public class MainActivity extends AppCompatActivity implements GpsStatus.Listener, LocationListener, OnSharedPreferenceChangeListener, SensorEventListener {
+public class MainActivity extends AppCompatActivity implements LocationListener, OnSharedPreferenceChangeListener, SensorEventListener {
 	private static final String TAG = MainActivity.class.getSimpleName();
 
     /**
@@ -445,30 +445,33 @@ public class MainActivity extends AppCompatActivity implements GpsStatus.Listene
 		super.onDestroy();
     }
     
-    /**
-     * Called when the status of the GPS changes. Updates GPS display.
-     */
-    public void onGpsStatusChanged (int event) {
-		GpsStatus status = locationManager.getGpsStatus(null);
-		int satsInView = 0;
-		int satsUsed = 0;
-		Iterable<GpsSatellite> sats = status.getSatellites();
-		for (GpsSatellite sat : sats) {
-			satsInView++;
-			if (sat.usedInFix()) {
-				satsUsed++;
-			}
-		}
+    private int mTtff = 0;
 
-		if (gpsSectionFragment != null) {
-    		gpsSectionFragment.onGpsStatusChanged(status, satsInView, satsUsed, sats);
-    	}
-    	
-		if (mapSectionFragment != null) {
-			mapSectionFragment.onGpsStatusChanged(status, satsInView, satsUsed, sats);
-		}
-    }
-    
+    private final GnssStatus.Callback mGnssStatusCallback = new GnssStatus.Callback() {
+        @Override
+        public void onFirstFix(int ttffMillis) {
+            mTtff = ttffMillis;
+        }
+
+        @Override
+        public void onSatelliteStatusChanged(GnssStatus status) {
+            java.util.List<SatInfo> sats = SatInfo.fromGnssStatus(status);
+            int satsInView = sats.size();
+            int satsUsed = 0;
+            for (SatInfo sat : sats) {
+                if (sat.usedInFix()) {
+                    satsUsed++;
+                }
+            }
+            if (gpsSectionFragment != null) {
+                gpsSectionFragment.onGpsStatusChanged(status, mTtff, satsInView, satsUsed, sats);
+            }
+            if (mapSectionFragment != null) {
+                mapSectionFragment.onGpsStatusChanged(status, satsInView, satsUsed, sats);
+            }
+        }
+    };
+
     /**
      * Called when a new location is found by a registered location provider.
      * Stores the location and updates GPS display and map view.
@@ -769,7 +772,7 @@ public class MainActivity extends AppCompatActivity implements GpsStatus.Listene
     protected void onStop() {
     	isStopped = true;
     	locationManager.removeUpdates(this);
-    	locationManager.removeGpsStatusListener(this);
+    	locationManager.unregisterGnssStatusCallback(mGnssStatusCallback);
     	sensorManager.unregisterListener(this);
         telephonyManager.listen(mPhoneStateListener, LISTEN_NONE);
         try {
@@ -803,9 +806,24 @@ public class MainActivity extends AppCompatActivity implements GpsStatus.Listene
 	 * Registers the {@link PhoneStateListener} for all necessary events
 	 */
 	private void registerPhoneStateListener() {
-		telephonyManager.listen(mPhoneStateListener, (LISTEN_CELL_INFO | LISTEN_CELL_LOCATION | LISTEN_DATA_CONNECTION_STATE | LISTEN_SIGNAL_STRENGTHS));
+		boolean hasFineLocation = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+		boolean hasPhoneState = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
+
+		int events = LISTEN_SIGNAL_STRENGTHS;
+		if (hasFineLocation) {
+			events |= LISTEN_CELL_INFO | LISTEN_CELL_LOCATION;
+		}
+		if (hasPhoneState) {
+			events |= LISTEN_DATA_CONNECTION_STATE;
+		}
+
+		try {
+			telephonyManager.listen(mPhoneStateListener, events);
+		} catch (SecurityException e) {
+			Log.w(TAG, "Permission not granted for PhoneStateListener: " + e.getMessage());
+		}
 	}
-	
+
 	/**
 	 * Requests location updates from the selected location providers.
 	 * 
@@ -837,7 +855,7 @@ public class MainActivity extends AppCompatActivity implements GpsStatus.Listene
         	if ((!providers.contains(LocationManager.GPS_PROVIDER)) && (!isStopped) && (allProviders.indexOf(LocationManager.GPS_PROVIDER) >= 0))
         		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
 
-        	locationManager.addGpsStatusListener(this);
+        	locationManager.registerGnssStatusCallback(mGnssStatusCallback, new android.os.Handler(android.os.Looper.getMainLooper()));
         } catch (SecurityException e) {
         	Log.w(TAG, "Permission not granted for " + LocationManager.GPS_PROVIDER + " location provider. Data display will not be available for this provider.");
         }

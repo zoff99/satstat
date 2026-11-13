@@ -27,7 +27,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.location.GpsSatellite;
+import com.vonglasow.michael.satstat.utils.SatInfo;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 
@@ -36,7 +36,7 @@ public class GpsStatusView extends SquareView {
 	private float mRotation = 0;
 	private int mW = 0;
 	private int mH = 0;
-	private Iterable<GpsSatellite> mSats;
+	private Iterable<SatInfo> mSats;
 	
 	private Paint activePaint;
 	private Paint inactivePaint;
@@ -153,7 +153,7 @@ public class GpsStatusView extends SquareView {
 				labelPathW, 0, -labelPaint.descent(), labelPaint);
 		
 		if (mSats != null) {
-			for (GpsSatellite sat : mSats) {
+			for (SatInfo sat : mSats) {
 				drawSat(canvas, sat.getPrn(), sat.getAzimuth(), sat.getElevation(), sat.getSnr(), sat.usedInFix());
 			}
 		}
@@ -208,7 +208,7 @@ public class GpsStatusView extends SquareView {
 		invalidate();
 	}
 	
-	public void showSats(Iterable<GpsSatellite> sats) {
+	public void showSats(Iterable<SatInfo> sats) {
 		mSats = sats;
 		invalidate();
 	}

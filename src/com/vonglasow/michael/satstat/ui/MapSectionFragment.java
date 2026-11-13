@@ -66,8 +66,8 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
-import android.location.GpsSatellite;
-import android.location.GpsStatus;
+import com.vonglasow.michael.satstat.utils.SatInfo;
+import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -509,7 +509,7 @@ public class MapSectionFragment extends Fragment {
 	/**
 	 * Called by {@link MainActivity} when the status of the GPS changes. Updates GPS display.
 	 */
-	public void onGpsStatusChanged(GpsStatus status, int satsInView, int satsUsed, Iterable<GpsSatellite> sats) {
+	public void onGpsStatusChanged(GnssStatus status, int satsInView, int satsUsed, Iterable<SatInfo> sats) {
 		if (satsUsed == 0) {
 			Location location = providerLocations.get(LocationManager.GPS_PROVIDER);
 			if (location != null)
