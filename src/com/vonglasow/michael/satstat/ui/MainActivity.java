@@ -241,6 +241,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 	private final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context c, Intent intent) {
+			if (ContextCompat.checkSelfPermission(c, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+				return;
 			if (WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(intent.getAction())) {
 				if (radioSectionFragment != null) {
 					radioSectionFragment.scanResults = wifiManager.getScanResults();
