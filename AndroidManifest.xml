@@ -12,6 +12,10 @@
     <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- needed on 13+ or the notification is silently hidden (not a crash) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".SatStatApplication"
@@ -59,6 +63,8 @@
 
         <service
             android:name="PasvLocListenerService"
+            android:enabled="true"
+            android:foregroundServiceType="location"
             android:exported="false"
             android:stopWithTask="false" >
         </service>
