@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         applicationId 'com.vonglasow.michael.satstat'
-        minSdk 21
+        minSdk 24
         targetSdk 34
     }
 
