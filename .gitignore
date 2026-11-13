@@ -1,6 +1,7 @@
 .gradle
 bin
-build
+build/
+app/build/
 gen
 res/raw/build.txt
 local.properties
