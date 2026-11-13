@@ -4,6 +4,7 @@ import android.location.GnssStatus;
 import java.util.ArrayList;
 import java.util.List;
 
+/** @noinspection SpellCheckingInspection*/
 public class SatInfo {
     private final int prn;
     private final int constellationType;
@@ -13,6 +14,8 @@ public class SatInfo {
     private final boolean usedInFix;
     private final boolean hasAlmanac;
     private final boolean hasEphemeris;
+
+    public static final int CONSTELLATION_IRNSS_HELPER = 7;
 
     public SatInfo(GnssStatus status, int index) {
         this.constellationType = status.getConstellationType(index);
@@ -51,7 +54,7 @@ public class SatInfo {
                 return svid + 200; // NMEA 201-235
             case GnssStatus.CONSTELLATION_GALILEO:
                 return svid + 300; // 301-336
-            case GnssStatus.CONSTELLATION_IRNSS:
+            case CONSTELLATION_IRNSS_HELPER:
                 return svid + 400; // 401-414 (IRNSS/NavIC, 14 satellites)
             default:
                 return svid;

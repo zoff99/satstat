@@ -86,6 +86,8 @@ import static android.telephony.PhoneStateListener.LISTEN_CELL_LOCATION;
 import static android.telephony.PhoneStateListener.LISTEN_DATA_CONNECTION_STATE;
 import static android.telephony.PhoneStateListener.LISTEN_NONE;
 import static android.telephony.PhoneStateListener.LISTEN_SIGNAL_STRENGTHS;
+import static com.vonglasow.michael.satstat.utils.SatInfo.CONSTELLATION_IRNSS_HELPER;
+
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -272,9 +274,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 				{GnssStatus.CONSTELLATION_GALILEO, 316, 36, 30, 180, 0},
 				{GnssStatus.CONSTELLATION_GALILEO, 319, 28, 18, 270, 0},
 				// --- IRNSS / NavIC (PRN 401-414): 3 sats ---
-				{GnssStatus.CONSTELLATION_IRNSS, 401, 45, 65,  90, 1},
-				{GnssStatus.CONSTELLATION_IRNSS, 404, 42, 55, 180, 1},
-				{GnssStatus.CONSTELLATION_IRNSS, 407, 38, 30, 270, 0},
+				{CONSTELLATION_IRNSS_HELPER, 401, 45, 65,  90, 1},
+				{CONSTELLATION_IRNSS_HELPER, 404, 42, 55, 180, 1},
+				{CONSTELLATION_IRNSS_HELPER, 407, 38, 30, 270, 0},
 		};
 		for (int[] s : spec) {
 			demo.add(new SatInfo(s[0], s[1], s[2], s[3], s[4], s[5] == 1));
