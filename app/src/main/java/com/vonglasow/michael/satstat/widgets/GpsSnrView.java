@@ -1,6 +1,6 @@
 /*
  * Copyright © 2013–2016 Michael von Glasow.
- * 
+ *
  * This file is part of LSRN Tools.
  *
  * LSRN Tools is free software: you can redistribute it and/or modify
@@ -37,7 +37,7 @@ import android.view.View;
  */
 public class GpsSnrView extends View {
 	private final String TAG = "GpsSnrView";
-	
+
 	/**
 	 * The highest currently supported NMEA ID.
 	 */
@@ -54,13 +54,16 @@ public class GpsSnrView extends View {
 
 	// Stroke width for grid lines
 	private int gridStrokeWidth;
-	
+
 	// Display density
 	private float density;
-	
-	// Effective height of label text in pixels
+
+	// Effective height of label text in pixels (at default label size)
 	private int textHeight;
-	
+
+	// Default (un-scaled) label text size in pixels, preserved for per-label scale-down
+	private float defaultLabelTextSize;
+
 	// Preferred height of the view in pixels so that labels and legible bars can be accommodated
 	private int preferredHeight;
 
@@ -89,6 +92,9 @@ public class GpsSnrView extends View {
 	private boolean draw_201_235 = false;
 	private boolean draw_236_300 = false;
 	private boolean draw_301_336 = false;
+
+	// Counter used by drawLabel to stagger labels across two rows; reset each drawGrid call
+	private int mLabelIndex = 0;
 
 
 	/**
@@ -121,9 +127,9 @@ public class GpsSnrView extends View {
 	private void doInit(Context context) {
 		DisplayMetrics metrics = context.getResources().getDisplayMetrics();
 		density = metrics.density;
-		
+
 		gridStrokeWidth = Math.max(1, (int) (density));
-		
+
 		activePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 		activePaint.setColor(Color.parseColor("#FF80CBC4")); // Teal 200
 		activePaint.setStyle(Paint.Style.FILL);
@@ -142,14 +148,15 @@ public class GpsSnrView extends View {
 
 		gridPaintNone = new Paint(gridPaint);
 		gridPaintNone.setColor(Color.parseColor("#00000000"));
-		
+
 		// FIXME style text properly
 		labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 		labelPaint.setStyle(Paint.Style.FILL);
 		labelPaint.setTextAlign(Paint.Align.CENTER);
 		labelPaint.setColor(context.getResources().getColor(R.color.secondary_text_default_material_dark));
-		labelPaint.setTextSize(context.getResources().getDimensionPixelSize(R.dimen.abc_text_size_small_material));
-		
+		defaultLabelTextSize = context.getResources().getDimensionPixelSize(R.dimen.abc_text_size_small_material);
+		labelPaint.setTextSize(defaultLabelTextSize);
+
 		/*
 		int ap = R.style.TextAppearance_AppCompat_Medium;
 		TypedArray appearance = null;
@@ -158,20 +165,20 @@ public class GpsSnrView extends View {
 			int n = appearance.getIndexCount();
 			for (int i = 0; i < n; i++) {
 				int attr = appearance.getIndex(i);
-				
+
 				switch (attr) {
 				case R.styleable.TextAppearance_android_textColor:
 					labelPaint.setColor(appearance.getColor(attr, labelPaint.getColor()));
 					break;
-					
+
 				case R.styleable.TextAppearance_android_textSize:
 					//labelPaint.setTextSize(appearance.getDimensionPixelSize(attr, (int) labelPaint.getTextSize()));
 					break;
-					
+
 				case R.styleable.TextAppearance_android_typeface:
 					//labelPaint.setTypeface(); // typefaceIndex = appearance.getInt(attr, -1);
 					break;
-					
+
 				case R.styleable.TextAppearance_android_shadowColor:
 				case R.styleable.TextAppearance_android_shadowDx:
 				case R.styleable.TextAppearance_android_shadowDy:
@@ -190,15 +197,16 @@ public class GpsSnrView extends View {
 		 * absolute text height (a positive number).
 		 */
 		textHeight = (int) Math.ceil(labelPaint.descent() - labelPaint.ascent());
-		
+
 		/*
 		 * Height should be the same as two rows of small text plus a row of medium text. This is a
 		 * rough approximation based on text sizes and the ratio between text size and actual height.
+		 * Add one more textHeight to accommodate two rows of staggered constellation labels at the bottom.
 		 */
 		preferredHeight = (int) (
 				(2 * labelPaint.getTextSize() + context.getResources().getDimensionPixelSize(R.dimen.abc_text_size_medium_material))
 				* textHeight / labelPaint.getTextSize()
-				);
+		) + textHeight;
 	}
 
 	/**
@@ -208,123 +216,153 @@ public class GpsSnrView extends View {
 		//don't use Canvas.getWidth() and Canvas.getHeight() here, they may return incorrect values
 		int w = getWidth();
 		int h = getHeight();
+		// Reserve two textHeight rows at the bottom for staggered constellation labels
+		int chartBottom = h - 2 * textHeight;
+
+		mLabelIndex = 0;
 
 		// left boundary
 		canvas.drawLine((float) gridStrokeWidth / 2, 0,
-				(float) gridStrokeWidth / 2, h - textHeight, gridPaintStrong);
-		
+						(float) gridStrokeWidth / 2, chartBottom, gridPaintStrong);
+
 		int numBars = getNumBars();
-		
+
 		if (draw_1_32)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_001_032), 1, 32, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_001_032), 1, 32, numBars, chartBottom);
 		if (draw_33_54)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_033_054), 33, 22, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_033_054), 33, 22, numBars, chartBottom);
 		if (draw_55_64)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_055_064), 55, 10, numBars);
-		
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_055_064), 55, 10, numBars, chartBottom);
+
 		// 65–88 is GLONASS, 89–96 is for possible future GLONASS extensions
 		if (draw_65_88 && draw_89_96)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_065_088), 65, 32, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_065_088), 65, 32, numBars, chartBottom);
 		else if (draw_65_88)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_065_088), 65, 24, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_065_088), 65, 24, numBars, chartBottom);
 		else if (draw_89_96)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_065_088), 89, 8, numBars);
-		
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_065_088), 89, 8, numBars, chartBottom);
+
 		if (draw_97_192)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_097_192), 97, 96, numBars);
-		
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_097_192), 97, 96, numBars, chartBottom);
+
 		// 193–195 is QZSS, 196–200 is for possible future QZSS extensions
 		if (draw_193_195 && draw_196_200)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_193_195), 193, 8, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_193_195), 193, 8, numBars, chartBottom);
 		else if (draw_193_195)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_193_195), 193, 3, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_193_195), 193, 3, numBars, chartBottom);
 		else if (draw_196_200)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_193_195), 196, 5, numBars);
-		
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_193_195), 196, 5, numBars, chartBottom);
+
 		if (draw_201_235)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_201_235), 201, 35, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_201_235), 201, 35, numBars, chartBottom);
 
 		// 236–300 (currently unused)
 		if (draw_236_300)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_236_300), 236, 65, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_236_300), 236, 65, numBars, chartBottom);
 
 		// 301–336 is Galileo
 		if (draw_301_336)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_301_336), 301, 36, numBars);
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_301_336), 301, 36, numBars, chartBottom);
 
 		// range boundaries and auxiliary lines (after every 4th satellite)
 		for (int nmeaID = 1; nmeaID < MAX_NMEA_ID; nmeaID++) {
 			int pos = getGridPos(nmeaID);
 			if (pos > 0) {
 				float x = (float) gridStrokeWidth / 2
-						+ pos * (w - gridStrokeWidth) / numBars;
+						  + pos * (w - gridStrokeWidth) / numBars;
 				Paint paint = gridPaintNone;
 				switch(nmeaID) {
-				case 32:
-				case 64:
-				case 96:
-				case 192:
-				case 200:
-				case 235:
-				case 300:
-				case 336:
-					paint = gridPaintStrong;
-					break;
-				case 54:
-					if (!draw_55_64)
+					case 32:
+					case 64:
+					case 96:
+					case 192:
+					case 200:
+					case 235:
+					case 300:
+					case 336:
 						paint = gridPaintStrong;
-					break;
-				case 88:
-					if (!draw_89_96)
-						paint = gridPaintStrong;
-					else
-						paint = gridPaint;
-					break;
-				case 195:
-					if (!draw_196_200)
-						paint = gridPaintStrong;
-				default:
-					if ((nmeaID % 4) == 0)
-						paint = gridPaint;
-					break;
+						break;
+					case 54:
+						if (!draw_55_64)
+							paint = gridPaintStrong;
+						break;
+					case 88:
+						if (!draw_89_96)
+							paint = gridPaintStrong;
+						else
+							paint = gridPaint;
+						break;
+					case 195:
+						if (!draw_196_200)
+							paint = gridPaintStrong;
+					default:
+						if ((nmeaID % 4) == 0)
+							paint = gridPaint;
+						break;
 				}
-				canvas.drawLine(x, 0, x, h - textHeight, paint);
+				canvas.drawLine(x, 0, x, chartBottom, paint);
 			}
 		}
-		
+
 		// right boundary
-		canvas.drawLine(w - (float) gridStrokeWidth / 2, h - textHeight,
-				w - (float) gridStrokeWidth / 2, 0, gridPaintStrong);
-		
-		// bottom line
-		canvas.drawLine(0, h - textHeight - (float) gridStrokeWidth / 2,
-				w, h - textHeight - (float) gridStrokeWidth / 2, gridPaintStrong);
+		canvas.drawLine(w - (float) gridStrokeWidth / 2, chartBottom,
+						w - (float) gridStrokeWidth / 2, 0, gridPaintStrong);
+
+		// bottom line (top of the label area)
+		canvas.drawLine(0, chartBottom - (float) gridStrokeWidth / 2,
+						w, chartBottom - (float) gridStrokeWidth / 2, gridPaintStrong);
 	}
-	
+
 	/**
 	 * Draws the label for a satellite range.
-	 * 
+	 * <p>
+	 * Labels are staggered across two rows (alternating by call order) so they never
+	 * overlap, regardless of the system font scale. Each label is also scaled down
+	 * to fit its bar group if the current text size would make it wider than the group.
+	 *
 	 * @param canvas The {@code Canvas} on which the SNR view will appear.
 	 * @param label The text to be displayed (the description of the satellite range, such as "GPS", "GLONASS" or "Beidou")
 	 * @param startBar The NMEA ID of the first satellite in the range
 	 * @param rangeBars The number of NMEA IDs in the range (ranges must be contiguous)
 	 * @param numBars Total number of SNR bars being displayed, as returned by getNumBars()
+	 * @param chartBottom The y coordinate where the chart area ends (top of the label area)
 	 */
-	private void drawLabel(Canvas canvas, String label, int startBar, int rangeBars, int numBars) {
+	private void drawLabel(Canvas canvas, String label, int startBar, int rangeBars, int numBars, int chartBottom) {
 		int offsetBars = getGridPos(startBar) - 1;
 		int w = getWidth();
-		int h = getHeight();
-		Path labelPath = new Path();
+		int row = mLabelIndex & 1;
+		mLabelIndex++;
 
+		// Reset paint to default size, then shrink if the label wouldn't fit its bar group
+		labelPaint.setTextSize(defaultLabelTextSize);
+		float pathWidth = (float) rangeBars * (w - gridStrokeWidth) / numBars - gridStrokeWidth;
+		float textWidth = labelPaint.measureText(label);
+		if (textWidth > pathWidth && textWidth > 0) {
+			labelPaint.setTextSize(defaultLabelTextSize * pathWidth / textWidth);
+		}
+
+		// Vertical position: row 0 baseline sits one textHeight below chartBottom,
+		// row 1 baseline sits two textHeights below chartBottom (at the view bottom).
+		float th = labelPaint.descent() - labelPaint.ascent();
+		float pathY = chartBottom + (row + 1) * th;
+
+		// Row 1 labels get a short vertical tick from chartBottom down to their row,
+		// so the eye can trace which bar group they belong to.
+		if (row == 1) {
+			float xMid = gridStrokeWidth + (offsetBars + rangeBars / 2.0f) * (w - gridStrokeWidth) / numBars;
+			canvas.drawLine(xMid, chartBottom, xMid, chartBottom + th, gridPaint);
+		}
+
+		Path labelPath = new Path();
 		labelPath.reset();
-		labelPath.moveTo(gridStrokeWidth + offsetBars * (w - gridStrokeWidth) / numBars, h);
-		labelPath.rLineTo(rangeBars * (w - gridStrokeWidth) / numBars - gridStrokeWidth, 0);
+		labelPath.moveTo(gridStrokeWidth + offsetBars * (w - gridStrokeWidth) / numBars, pathY);
+		labelPath.rLineTo(pathWidth, 0);
 		canvas.drawTextOnPath(label, labelPath, 0, -labelPaint.descent(), labelPaint);
 	}
-	
+
 	/**
 	 * Draws the SNR bar for a satellite.
-	 * 
+	 *
 	 * @param canvas The {@code Canvas} on which the SNR view will appear.
 	 * @param nmeaID The NMEA ID of the satellite, as returned by {@link android.location.SatInfo#getPrn()}.
 	 * @param snr The signal-to-noise ratio (SNR) for the satellite.
@@ -332,7 +370,7 @@ public class GpsSnrView extends View {
 	 */
 	private void drawSat(Canvas canvas, int nmeaID, float snr, boolean used) {
 		int w = getWidth();
-		int h = getHeight() - textHeight;
+		int h = getHeight() - 2 * textHeight;
 
 		int i = getGridPos(nmeaID);
 
@@ -351,13 +389,13 @@ public class GpsSnrView extends View {
 	 * This function returns the position at which the SNR bar for the
 	 * satellite with the given {@code nmeaID} will appear in the grid, taking
 	 * into account the visibility of NMEA ID ranges.
-	 * 
+	 *
 	 * @param nmeaID The NMEA ID of the satellite, as returned by {@link android.location.SatInfo#getPrn()}.
-	 * @return The position of the SNR bar in the grid. The position of the first visible bar is 1. If {@code nmeaID} falls within a hidden range, -1 is returned. 
+	 * @return The position of the SNR bar in the grid. The position of the first visible bar is 1. If {@code nmeaID} falls within a hidden range, -1 is returned.
 	 */
 	private int getGridPos(int nmeaID) {
 		if (nmeaID < 1) return -1;
-		
+
 		int skip = 0;
 		if (nmeaID > 32) {
 			if (!draw_1_32) skip+=32;
@@ -376,15 +414,9 @@ public class GpsSnrView extends View {
 									if (nmeaID > 200) {
 										if (!draw_196_200) skip+=5;
 										if (nmeaID > 235) {
-											if (!draw_201_235) skip+=35;
-											if (nmeaID > 300) {
-												if (nmeaID > MAX_NMEA_ID) return -1;
-												else if (!draw_301_336) return -1;
-												else if (!draw_236_300) skip+=65;
-											} else {
-												// 235 < nmeaID <= 300
-												if (!draw_236_300) return -1;
-											}
+											if (nmeaID > MAX_NMEA_ID) return -1;
+											else if (!draw_301_336) return -1;
+											else if (!draw_236_300) skip+=65;
 										} else {
 											// 200 < nmeaID <= 235
 											if (!draw_201_235) return -1;
@@ -421,39 +453,39 @@ public class GpsSnrView extends View {
 			// nmeaID <= 32
 			if (!draw_1_32) return -1;
 		}
-		
+
 		return nmeaID - skip;
 	}
-	
+
 	/**
 	 * Returns the number of SNR bars to draw
-	 * 
+	 *
 	 * The number of bars to draw varies depending on the systems supported by the device. Common
 	 * numbers are 32 for a GPS-only receiver, 56 for a combined GPS/GLONASS receiver or 91 for a
 	 * combined GPS/GLONASS/Beidou receiver. Another 36 bars are needed for Galileo; some receivers
 	 * require additional bars for regional GNSS or assistance systems.
-	 * 
+	 *
 	 * @return The number of bars to draw
 	 */
 	private int getNumBars() {
-		return (draw_1_32 ? 32 : 0) 
-				+ (draw_33_54 ? 22 : 0)
-				+ (draw_55_64 ? 10 : 0)
-				+ (draw_65_88 ? 24 : 0)
-				+ (draw_89_96 ? 8 : 0)
-				+ (draw_97_192 ? 96 : 0)
-				+ (draw_193_195 ? 3 : 0)
-				+ (draw_196_200 ? 5 : 0)
-				+ (draw_201_235 ? 35 : 0)
-				+ (draw_236_300 ? 65 : 0)
-				+ (draw_301_336 ? 36 : 0);
+		return (draw_1_32 ? 32 : 0)
+			   + (draw_33_54 ? 22 : 0)
+			   + (draw_55_64 ? 10 : 0)
+			   + (draw_65_88 ? 24 : 0)
+			   + (draw_89_96 ? 8 : 0)
+			   + (draw_97_192 ? 96 : 0)
+			   + (draw_193_195 ? 3 : 0)
+			   + (draw_196_200 ? 5 : 0)
+			   + (draw_201_235 ? 35 : 0)
+			   + (draw_236_300 ? 65 : 0)
+			   + (draw_301_336 ? 36 : 0);
 	}
 
 	/**
 	 * Initializes the SNR grid.
 	 * <p>
 	 * This method iterates through {@link #mSats} to determine which ranges of
-	 * NMEA IDs will be drawn. 
+	 * NMEA IDs will be drawn.
 	 */
 	protected void initializeGrid() {
 		// iterate through list to find out how many bars to draw
@@ -501,10 +533,10 @@ public class GpsSnrView extends View {
 		 * will their corresponding base range.
 		 */
 		if (!(draw_1_32 || draw_33_54 || draw_65_88 || draw_97_192 || draw_193_195 || draw_201_235
-				|| draw_236_300 || draw_301_336))
+			  || draw_236_300 || draw_301_336))
 			draw_1_32 = true;
 	}
-	
+
 	/**
 	 * Redraws the SNR view.
 	 * <p>
@@ -516,12 +548,12 @@ public class GpsSnrView extends View {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		initializeGrid();
-		
+
 		// draw the SNR bars
 		if (mSats != null)
 			for (SatInfo sat : mSats)
 				drawSat(canvas, sat.getPrn(), sat.getSnr(), sat.usedInFix());
-		
+
 		// draw the grid on top
 		drawGrid(canvas);
 	}
@@ -536,7 +568,7 @@ public class GpsSnrView extends View {
 	 * <p>
 	 * Call this method when new SNR data is available. It will update the SNR
 	 * view's internal list of {@code SatInfo}s and trigger a redraw.
-	 * 
+	 *
 	 * @param sats A list of satellites currently in view.
 	 */
 	public void showSats(Iterable<SatInfo> sats) {
