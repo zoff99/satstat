@@ -46,8 +46,8 @@ android {
         applicationId 'com.zoffcc.applications.satstat'
         minSdk 24
         targetSdk 33
-        versionCode 20001
-        versionName "2.0.1"
+        versionCode 40001
+        versionName "4.0.1"
 
         // Enabling multidex support
         multiDexEnabled true
