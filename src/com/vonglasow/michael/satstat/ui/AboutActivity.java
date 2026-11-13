@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import android.text.Html;
 import android.view.MenuItem;
 import android.widget.TextView;

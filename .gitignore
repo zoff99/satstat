@@ -3,3 +3,4 @@ bin
 build
 gen
 res/raw/build.txt
+local.properties

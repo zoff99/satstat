@@ -49,8 +49,8 @@ import android.net.wifi.ScanResult;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.core.content.ContextCompat;
 import android.telephony.CellInfo;
 import android.telephony.CellLocation;
 import android.telephony.NeighboringCellInfo;
@@ -796,7 +796,7 @@ public class RadioSectionFragment extends Fragment {
 			 * NeighboringCellInfo is not supported on some devices and will return no data. It lists
 			 * only GSM and successors' cells, but not CDMA cells.
 			 */
-			List<NeighboringCellInfo> neighboringCells = mainActivity.telephonyManager.getNeighboringCellInfo();
+            List<NeighboringCellInfo> neighboringCells = java.util.Collections.emptyList();
 			String networkOperator = mainActivity.telephonyManager.getNetworkOperator();
 			mCellsGsm.updateAll(networkOperator, neighboringCells);
 			mCellsLte.updateAll(networkOperator, neighboringCells);
