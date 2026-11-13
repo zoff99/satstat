@@ -16,6 +16,10 @@ Status
 Latest Automated Screenshots
 =
 
+<img src="https://github.com/zoff99/satstat/releases/download/nightly/android_screen01_33.png" width="220">&nbsp;<img src="https://github.com/zoff99/satstat/releases/download/nightly/android_screen02_33.png" width="220">
+
+<br><br>
+
 <img src="https://github.com/zoff99/satstat/releases/download/nightly/android_screen01_24.png" width="120">&nbsp;<img src="https://github.com/zoff99/satstat/releases/download/nightly/android_screen01_29.png" width="120">&nbsp;<img src="https://github.com/zoff99/satstat/releases/download/nightly/android_screen01_33.png" width="120">&nbsp;<img src="https://github.com/zoff99/satstat/releases/download/nightly/android_screen01_35.png" width="120">
 
 
