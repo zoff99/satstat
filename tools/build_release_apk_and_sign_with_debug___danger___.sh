@@ -17,7 +17,7 @@ find . -name '*.apk' -exec 'rm' '-fv' {} \;
 
 ./gradlew assembleRelease || exit 1
 
-find . -name '*.apk' 2>/dev/null | grep 'satstat-release-unsigned.apk' || exit 1
+find . -name '*.apk' 2>/dev/null | grep 'app-release-unsigned.apk' || exit 1
 release_apk_file=$(find . -name '*.apk' 2>/dev/null)
 
 zipalign -f 4 "$release_apk_file" "$temp_apk_file" || exit 1
