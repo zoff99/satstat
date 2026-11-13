@@ -88,7 +88,7 @@ jobs:
             adb shell pm grant com.zoffcc.applications.satstat android.permission.READ_PHONE_STATE
             # Notifications for API 33+ (POST_NOTIFICATIONS is runtime-only on 13+)
             # adb shell pm grant com.zoffcc.applications.satstat android.permission.POST_NOTIFICATIONS
-            adb shell am start -n com.zoffcc.applications.satstat/com.vonglasow.michael.satstat.ui.MainActivity &
+            adb shell am start -n com.zoffcc.applications.satstat/com.vonglasow.michael.satstat.ui.MainActivity --ez demo_gnss true &
             sleep 90
             adb exec-out screencap -p > ~/android_screen01_${{ matrix.api-level }}.png
             ls -al ~/android_screen01_${{ matrix.api-level }}.png

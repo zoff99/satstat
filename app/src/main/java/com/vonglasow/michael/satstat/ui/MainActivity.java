@@ -55,6 +55,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+
+import com.vonglasow.michael.satstat.BuildConfig;
 import com.vonglasow.michael.satstat.utils.SatInfo;
 import android.location.GnssStatus;
 import android.location.Location;
@@ -101,6 +103,7 @@ import com.vonglasow.michael.satstat.R;
 import com.vonglasow.michael.satstat.data.CellTower;
 import com.vonglasow.michael.satstat.data.CellTowerList;
 
+/** @noinspection SpellCheckingInspection*/
 public class MainActivity extends AppCompatActivity implements LocationListener, OnSharedPreferenceChangeListener, SensorEventListener {
 	private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -206,6 +209,45 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 	int prefWifiSort = 0;
 	boolean prefMapOffline = false;
 	String prefMapPath = Const.MAP_PATH_DEFAULT;
+
+	private boolean mDemoGnss = false;
+	private boolean mDemoFed = false;
+	private final android.os.Handler mDemoHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+
+	private void feedDemoSats()
+	{
+		if (gpsSectionFragment == null) {
+			// fragment not ready yet — retry shortly
+			mDemoHandler.postDelayed(this::feedDemoSats, 500);
+			return;
+		}
+		// Build a synthetic list of SatInfo covering GPS, GLONASS, Galileo, BeiDou
+		List<SatInfo> demo = new ArrayList<>();
+		int[][] spec = {
+				// {constellationType, prn, snr, elevation, azimuth, usedInFix}
+				{GnssStatus.CONSTELLATION_GPS,      1, 45, 60, 120, 1},
+				{GnssStatus.CONSTELLATION_GPS,      2, 40, 50, 150, 1},
+				{GnssStatus.CONSTELLATION_GPS,      3, 35, 40, 180, 0},
+				{GnssStatus.CONSTELLATION_GLONASS, 65, 42, 55, 100, 1},
+				{GnssStatus.CONSTELLATION_GLONASS, 66, 38, 45, 130, 0},
+				{GnssStatus.CONSTELLATION_GALILEO,301, 44, 65,  90, 1},
+				{GnssStatus.CONSTELLATION_GALILEO,302, 39, 52, 140, 1},
+				{GnssStatus.CONSTELLATION_BEIDOU, 201, 41, 48, 110, 1},
+		};
+		for (int[] s : spec) {
+			demo.add(new SatInfo(s[0], s[1], s[2], s[3], s[4], s[5] == 1));
+		}
+
+		// Count stats
+		int satsInView = demo.size();
+		int satsUsed = 0;
+		for (SatInfo sat : demo) {
+			if (sat.usedInFix()) satsUsed++;
+		}
+
+		// Pass to the fragment (passing null for GnssStatus since we can't construct one)
+		gpsSectionFragment.onGpsStatusChanged(null, 5000, satsInView, satsUsed, demo);
+	}
 
 	/**
 	 * The {@link PhoneStateListener} for getting radio network updates 
@@ -314,6 +356,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		mDemoGnss = getIntent().getBooleanExtra("demo_gnss", false);
 
 		defaultUEH = Thread.getDefaultUncaughtExceptionHandler();
 
@@ -764,6 +808,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 			mapSectionFragment.onMapSourceChanged();
 
 		requestPermissions();
+
+		if (mDemoGnss && !mDemoFed) {
+			mDemoFed = true;
+			mDemoHandler.postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					feedDemoSats();
+				}
+			}, 1500);
+		}
 	}
 
 	/**
@@ -775,7 +829,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 	protected void onStop() {
 		isStopped = true;
 		locationManager.removeUpdates(this);
-		locationManager.unregisterGnssStatusCallback(mGnssStatusCallback);
+		if (!mDemoGnss) {
+			locationManager.unregisterGnssStatusCallback(mGnssStatusCallback);
+		}
 		sensorManager.unregisterListener(this);
 		telephonyManager.listen(mPhoneStateListener, LISTEN_NONE);
 		try {
@@ -784,8 +840,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 			// sometimes the receiver isn't registered, make sure we don't crash
 			Log.d(TAG, "WifiScanReceiver was never registered, caught exception");
 		}
-		// we'll just skip that so locations will get invalidated in any case
-		//providerInvalidationHandler.removeCallbacksAndMessages(null);
 		super.onStop();
 	}
 
@@ -858,7 +912,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 			if ((!providers.contains(LocationManager.GPS_PROVIDER)) && (!isStopped) && (allProviders.indexOf(LocationManager.GPS_PROVIDER) >= 0))
 				locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
 
-			locationManager.registerGnssStatusCallback(mGnssStatusCallback, new android.os.Handler(android.os.Looper.getMainLooper()));
+			// Skip real GNSS callback in demo mode — we inject synthetic data instead
+			if (!mDemoGnss) {
+				locationManager.registerGnssStatusCallback(mGnssStatusCallback, new android.os.Handler(android.os.Looper.getMainLooper()));
+			}
 		} catch (SecurityException e) {
 			Log.w(TAG, "Permission not granted for " + LocationManager.GPS_PROVIDER + " location provider. Data display will not be available for this provider.");
 		}

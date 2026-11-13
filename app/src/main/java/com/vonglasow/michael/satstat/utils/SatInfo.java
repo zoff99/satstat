@@ -25,6 +25,17 @@ public class SatInfo {
         this.hasEphemeris = status.hasEphemerisData(index);
     }
 
+    public SatInfo(int constellationType, int prn, float snr, float elevation, float azimuth, boolean usedInFix) {
+        this.constellationType = constellationType;
+        this.prn = prn;
+        this.snr = snr;
+        this.elevation = elevation;
+        this.azimuth = azimuth;
+        this.usedInFix = usedInFix;
+        this.hasAlmanac = true;
+        this.hasEphemeris = true;
+    }
+
     // Maps GnssStatus SVID + constellation to legacy NMEA PRN numbers expected by GpsSnrView
     private static int toLegacyPrn(int constellation, int svid) {
         switch (constellation) {

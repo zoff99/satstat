@@ -152,11 +152,17 @@ public class GpsSectionFragment extends Fragment {
 	/**
 	 * Called by {@link MainActivity} when the status of the GPS changes. Updates GPS display.
 	 */
-    public void onGpsStatusChanged(GnssStatus status, int ttff, int satsInView, int satsUsed, Iterable<SatInfo> sats) {    
-		gpsSats.setText(String.valueOf(satsUsed) + "/" + String.valueOf(satsInView));
-        gpsTtff.setText(String.valueOf(ttff / 1000));
-		gpsStatusView.showSats(sats);
-		gpsSnrView.showSats(sats);
+    public void onGpsStatusChanged(GnssStatus status, int ttff, int satsInView, int satsUsed, Iterable<SatInfo> sats) {
+		try
+		{
+			gpsSats.setText(String.valueOf(satsUsed) + "/" + String.valueOf(satsInView));
+			gpsTtff.setText(String.valueOf(ttff / 1000));
+			gpsStatusView.showSats(sats);
+			gpsSnrView.showSats(sats);
+		}
+		catch(Exception e)
+		{
+		}
 	}
 
 
