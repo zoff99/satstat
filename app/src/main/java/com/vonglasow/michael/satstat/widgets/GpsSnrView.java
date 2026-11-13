@@ -77,8 +77,8 @@ public class GpsSnrView extends View {
 	 * 97–192: not used
 	 * 193–195: QZSS
 	 * 196–200: QZSS (future extensions?)
-	 * 201–235: Beidou
-	 * 236–300: not used
+	 * 201–263: Beidou (BeiDou-2 and BeiDou-3 combined)
+	 * 264–300: not used (gap between BeiDou and Galileo)
 	 * 301–336: Galileo
 	 * 337–400: not used (gap between Galileo and IRNSS)
 	 * 401–414: IRNSS / NavIC
@@ -91,8 +91,8 @@ public class GpsSnrView extends View {
 	private boolean draw_97_192 = false;
 	private boolean draw_193_195 = false;
 	private boolean draw_196_200 = false;
-	private boolean draw_201_235 = false;
-	private boolean draw_236_300 = false;
+	private boolean draw_201_263 = false;
+	// draw_236_300 removed — merged into BeiDou
 	private boolean draw_301_336 = false;
 	private boolean draw_401_414 = false;
 
@@ -256,12 +256,8 @@ public class GpsSnrView extends View {
 		else if (draw_196_200)
 			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_193_195), 196, 5, numBars, chartBottom);
 
-		if (draw_201_235)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_201_235), 201, 35, numBars, chartBottom);
-
-		// 236–300 (currently unused)
-		if (draw_236_300)
-			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_236_300), 236, 65, numBars, chartBottom);
+		if (draw_201_263)
+			drawLabel(canvas, getContext().getResources().getString(R.string.title_nmea_201_263), 201, 63, numBars, chartBottom);
 
 		// 301–336 is Galileo
 		if (draw_301_336)
@@ -284,7 +280,7 @@ public class GpsSnrView extends View {
 					case 96:
 					case 192:
 					case 200:
-					case 235:
+					case 263:
 					case 300:
 					case 336:
 					case 400:
@@ -422,24 +418,25 @@ public class GpsSnrView extends View {
 									if (!draw_193_195) skip+=3;
 									if (nmeaID > 200) {
 										if (!draw_196_200) skip+=5;
-										if (nmeaID > 235) {
+										if (nmeaID > 300) {
 											if (nmeaID > MAX_NMEA_ID) return -1;
 											else if (nmeaID > 400) {
 												// 400 < nmeaID <= 414: IRNSS / NavIC
 												if (!draw_401_414) return -1;
 												if (!draw_301_336) skip += 36;
-												if (!draw_236_300) skip += 65;
-												skip += 64; // gap 337–400 is never drawn
+												skip += 37; // gap 264-300 (37 slots) + gap 337-400 (64 slots) = 101, but we skip 264-300 first
 											}
 											else if (nmeaID > 336) {
 												// 336 < nmeaID <= 400: gap, nothing maps here
 												return -1;
 											}
 											else if (!draw_301_336) return -1;
-											else if (!draw_236_300) skip+=65;
+										} else if (nmeaID > 263) {
+											// 263 < nmeaID <= 300: gap between BeiDou and Galileo
+											return -1;
 										} else {
-											// 200 < nmeaID <= 235
-											if (!draw_201_235) return -1;
+											// 200 < nmeaID <= 263: BeiDou (full range)
+											if (!draw_201_263) return -1;
 										}
 									} else {
 										// 195 < nmeaID <= 200
@@ -496,8 +493,7 @@ public class GpsSnrView extends View {
 			   + (draw_97_192 ? 96 : 0)
 			   + (draw_193_195 ? 3 : 0)
 			   + (draw_196_200 ? 5 : 0)
-			   + (draw_201_235 ? 35 : 0)
-			   + (draw_236_300 ? 65 : 0)
+			   + (draw_201_263 ? 63 : 0)
 			   + (draw_301_336 ? 36 : 0)
 			   + (draw_401_414 ? 14 : 0);
 	}
@@ -538,10 +534,11 @@ public class GpsSnrView extends View {
 					// most likely an extended QZSS range, display the lower range, too
 					draw_193_195 = true;
 					draw_196_200 = true;
-				} else if (prn <= 235) {
-					draw_201_235 = true;
+				} else if (prn <= 263) {
+					draw_201_263 = true;
 				} else if (prn <= 300) {
-					draw_236_300 = true; // TODO: same as above, do we really want to enable this?
+					// 264-300 is a gap; nothing meaningful maps here
+					Log.w(TAG, String.format("Got satellite with NMEA ID %d (from the 264-300 gap)", prn));
 				} else if (prn <= 336) {
 					draw_301_336 = true;
 				} else if (prn <= 400) {
@@ -558,8 +555,8 @@ public class GpsSnrView extends View {
 		 * No need to check for extended ranges here - if they get drawn, so
 		 * will their corresponding base range.
 		 */
-		if (!(draw_1_32 || draw_33_54 || draw_65_88 || draw_97_192 || draw_193_195 || draw_201_235
-			  || draw_236_300 || draw_301_336 || draw_401_414))
+		if (!(draw_1_32 || draw_33_54 || draw_65_88 || draw_97_192 || draw_193_195 || draw_201_263
+			  || draw_301_336 || draw_401_414))
 			draw_1_32 = true;
 	}
 
