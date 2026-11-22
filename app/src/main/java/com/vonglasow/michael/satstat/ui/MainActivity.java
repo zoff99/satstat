@@ -401,7 +401,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		mDemoGnss = getIntent().getBooleanExtra("demo_gnss", false);
+		if (BuildConfig.DEBUG)
+		{
+			mDemoGnss = getIntent().getBooleanExtra("demo_gnss", false);
+		}
 
 		defaultUEH = Thread.getDefaultUncaughtExceptionHandler();
 
@@ -853,14 +856,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
 		requestPermissions();
 
-		if (mDemoGnss && !mDemoFed) {
-			mDemoFed = true;
-			mDemoHandler.postDelayed(new Runnable() {
-				@Override
-				public void run() {
-					feedDemoSats();
-				}
-			}, 1500);
+		if (mDemoGnss && !mDemoFed)
+		{
+			if (BuildConfig.DEBUG)
+			{
+				mDemoFed = true;
+				mDemoHandler.postDelayed(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						feedDemoSats();
+					}
+				}, 1500);
+			}
 		}
 	}
 
