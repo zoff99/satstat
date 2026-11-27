@@ -168,7 +168,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
 
-    implementation 'commons-net:commons-net:3.5'
+    implementation 'commons-net:commons-net:3.13.0'
 
     implementation 'org.mapsforge:mapsforge-core:0.18.0'
     implementation 'org.mapsforge:mapsforge-map:0.18.0'
